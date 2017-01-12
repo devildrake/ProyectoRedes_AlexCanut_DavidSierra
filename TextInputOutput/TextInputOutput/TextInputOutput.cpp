@@ -45,6 +45,18 @@ void CheckInsert(jugadores arr[],int length,jugadores toInsert) {
 }
 
 
+//Función que determina si el fichero con el nombre pasado como parametro existe (en la ruta señalizada por name)
+inline bool exist(const string &name) {
+	ifstream file(name);
+	if (!file) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
+
+
 void main() {
 	int i = 0;
 	string line;
