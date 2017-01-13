@@ -44,6 +44,17 @@ void CheckInsert(jugadores arr[],int length,jugadores toInsert) {
 	selection_sort(arr, length);
 }
 
+void CreateTop10() {
+	jugadores arrayVacio[10];
+	for (int i = 0; i < 10; i++) {
+		arrayVacio[i].name = "---";
+		arrayVacio[i].score = 0;
+	}
+	ofstream archivoSalidas;
+	archivoSalidas.open("Top10.txt");
+	archivoSalidas << "top10\nplayer\n" << arrayVacio[0].name << "\n" << to_string(arrayVacio[0].score) << "\nplayer\n" << arrayVacio[1].name << "\n" << to_string(arrayVacio[1].score) << "\nplayer\n" << arrayVacio[2].name << "\n" << to_string(arrayVacio[2].score) << "\nplayer\n" << arrayVacio[3].name << "\n" << to_string(arrayVacio[3].score) << "\nplayer\n" << arrayVacio[4].name << "\n" << to_string(arrayVacio[4].score) << "\nplayer\n" << arrayVacio[5].name << "\n" << to_string(arrayVacio[5].score) << "\nplayer\n" << arrayVacio[6].name << "\n" << to_string(arrayVacio[6].score) << "\nplayer\n" << arrayVacio[7].name << "\n" << to_string(arrayVacio[7].score) << "\nplayer\n" << arrayVacio[8].name << "\n" << to_string(arrayVacio[8].score) << "\nplayer\n" << arrayVacio[9].name << "\n" << to_string(arrayVacio[9].score) << "\n";
+	archivoSalidas.close();
+}
 
 //Función que determina si el fichero con el nombre pasado como parametro existe (en la ruta señalizada por name)
 inline bool exist(const string &name) {
@@ -60,7 +71,10 @@ inline bool exist(const string &name) {
 void main() {
 	int i = 0;
 	string line;
-	ifstream myfile("example.txt");
+	if (!exist("Top10.txt")) {
+		CreateTop10();
+	}
+	ifstream myfile("Top10.txt");
 	ofstream outPutFile;
 	jugadores losPlayers[10];
 	int newScore;
