@@ -5,8 +5,29 @@
 #include <stdio.h>
 #include <thread>
 #include <mutex>
+#include <string>
+#include <stdlib.h>
 //#include <stdlib.h>
 
+//Librerias conexion
+#define WIN32_LEAN_AND_MEAN
+
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+//#include <stdlib.h>
+//#include <stdio.h>
+
+
+// Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
+#pragma comment (lib, "Ws2_32.lib")
+#pragma comment (lib, "Mswsock.lib")
+#pragma comment (lib, "AdvApi32.lib")
+
+
+#define DEFAULT_BUFLEN 512
+#define DEFAULT_PORT "27015"
+//Cierre librerías conexion
 
 #define ARRIBA     72      // CONSTANTS AMB LES FLETXES DEL TECLAT
 #define IZQUIERDA  75
@@ -16,6 +37,20 @@
 #define ENTER      13
 
 using namespace std;
+
+//Asuntos ajenos al Pacman
+bool userRegistered = false;
+bool mustExit = false;
+bool welcomed = false;
+bool gameOver = false;
+string userName;
+
+struct jugadorT {
+	string name;
+	int score;
+};
+
+
 
 int rand1 = 0;
 int rand2 = 0;
@@ -39,7 +74,6 @@ mutex mutRand;
 
 int sceneState = 0;
 
-
 void setCColor(int color)
 {
 	
@@ -58,7 +92,7 @@ int color[7] = {
 	0x002,
 	0x00B,
 	0x005,
-	0x00F
+	0x00F //Blanco
 };
 
 struct fantasma {
@@ -114,6 +148,23 @@ char mapa[50][100] = {
 	"                  DXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXC",
 };
 
+bool CheckMap() {
+	bool atLeastOne = false;
+	for (int i = 0; i < 50; i++) {
+		for (int j = 0; j < 100; j++) {
+			if (mapa[i][j] == '_') {
+				atLeastOne = true;
+			}
+		}
+	}
+	return atLeastOne;
+}
+
+void GameOverCheck() {
+	if (vides <= 0 || CheckMap() == false) {
+		gameOver = true;
+	}
+}
 
 void pintar_mapa()// Funcio que imprimeix el mapa basant-se en el mapa codificat
 {
@@ -203,7 +254,7 @@ void borrarPacman(int x, int y) {
 		mapa[y][x] = ' '; 
 		punts += 5; 
 		puntCont += 5;
-		if (puntCont = 25&&vides<3&&vides>0) {
+		if (puntCont == 25&&vides<3&&vides>0) {
 			vides++;
 			puntCont = 0;
 		}
@@ -397,83 +448,146 @@ void marcador() {
 
 }
 
-
-int main() {
-
-	if (sceneState == 0) {
-		int a;
-		cout << "Welcome to Pacman Madafacking world\n";
-		cout << "What do you wish to do?";
-		cin >> a;
-
-		if (a == 1) {
-			sceneState = a;
+//Función que recibe un string y valora en función de los carácteres especiales si es valido o no
+bool validate(string aName){
+	bool valid = true;
+	for (int i = 0; i < aName.length(); i++) {
+		if (aName[i] == '?'||aName[i]=='!'||aName[i]=='.') {
+			valid = false;
 		}
-
 	}
-	if (sceneState == 1) {
-		pintar_mapa();
-		srand(time(NULL));
+	return valid;
+	}
 
-		fantasma ghostA = inicialitzarFantasma(41, 14, 2);
-		fantasma ghostB = inicialitzarFantasma(43, 14, 3);
-		fantasma ghostC = inicialitzarFantasma(40, 14, 4);
-		fantasma ghostD = inicialitzarFantasma(39, 14, 5);
-
-		fantasma* pointA = &ghostA;
-		fantasma* pointB = &ghostB;
-		fantasma* pointC = &ghostC;
-		fantasma* pointD = &ghostD;
-
-		/*thread pacman = thread(mourePacman);
-		thread ghA = thread(moureFantasma, ghostA);
-		thread ghB = thread(moureFantasma, ghostB);
-		thread ghC = thread(moureFantasma, ghostC);
-		thread ghD = thread(moureFantasma, ghostD);
-		*/
+void main() {
+	jugadorT top10[10];
 
 
-		while (vides > 0 && punts < 1900) {
 
-			marcador();
-			//TODO Moure el Pacman, els fantasmes i detectar els possibles xocs
-			rand1 = rand() % 4;
-			rand2 = rand() % 4;
-			rand3 = rand() % 4;
-			rand4 = rand() % 4;
-			rand5 = rand() % 4;
-			mourePacman();
-			/*moureFantasma(ghostA);
-			moureFantasma(ghostB);
-			moureFantasma(ghostC);
-			moureFantasma(ghostD);
+	for (int i = 0; i < 10; i++) {
+		top10[i].name = "---";
+		top10[i].score = 0;
+	}
+
+	while (!userRegistered) {
+		cout << "Enter an username (case sensitive):" << endl;
+		cin >> userName;
+
+		if (validate(userName)) {
+			userRegistered = true;
+			sceneState = 0;
+		}
+		else {
+			cout << "Invalid UserName" << endl;
+		}
+	}
+
+	while (!mustExit) {
+		if (!welcomed) {
+			welcomed = true;
+			cout << "Bienvenido a Pacman " << userName<<" !"<<   endl << endl;
+		}
+		
+		if (sceneState == 0) {
+			int a;
+			
+			cout << "Ests en el menu principal" << endl;
+			cout << "¿Que desea hacer?" << endl;
+			cout << "1: Jugar" << endl;
+			cout << "2: Consultar Top 10" << endl;
+			cout << "3: Consultar Puntuaciones personales" << endl;
+			cout << "4: Consultar logros" << endl;
+			cout << "5: Salir" << endl;
+			cin >> a;
+
+			if (a == 1 || a == 2 || a == 3 || a == 4 || a == 5) {
+				sceneState = a;
+			}
+		}
+		else if (sceneState == 1) {
+			//Vacia la consola
+			std::system("cls");
+
+			pintar_mapa();
+			srand(time(NULL));
+
+			fantasma ghostA = inicialitzarFantasma(41, 14, 2);
+			fantasma ghostB = inicialitzarFantasma(43, 14, 3);
+			fantasma ghostC = inicialitzarFantasma(40, 14, 4);
+			fantasma ghostD = inicialitzarFantasma(39, 14, 5);
+
+			fantasma* pointA = &ghostA;
+			fantasma* pointB = &ghostB;
+			fantasma* pointC = &ghostC;
+			fantasma* pointD = &ghostD;
+#pragma region pacmanGame
+			//while (vides > 0 && punts < 1900) {
+			while (!gameOver){
+				marcador();
+				rand1 = rand() % 4;
+				rand2 = rand() % 4;
+				rand3 = rand() % 4;
+				rand4 = rand() % 4;
+				rand5 = rand() % 4;
+				mourePacman();
+				thread pacman = thread(mourePacman);
+				thread ghA = thread(moureFantasma, pointA);
+				thread ghB = thread(moureFantasma, pointB);
+				thread ghC = thread(moureFantasma, pointC);
+				thread ghD = thread(moureFantasma, pointD);
+
+				Sleep(5);
+				pacman.join();
+
+				ghA.join();
+				ghB.join();
+				ghC.join();
+				ghD.join();
+
+
+				Sleep(100);
+				GameOverCheck();
+			}
+
+
+		/*	for (int i = 0; i <= vides; i++) {
+				gotoxy(5, i + 27);
+				printf(" ");
+			}
 			*/
-			thread pacman = thread(mourePacman);
-			thread ghA = thread(moureFantasma, pointA);
-			thread ghB = thread(moureFantasma, pointB);
-			thread ghC = thread(moureFantasma, pointC);
-			thread ghD = thread(moureFantasma, pointD);
+			//system("pause>NULL");
+			std::system("cls");
+			setCColor(0x00F);
+			gameOver = false;
+			vides = 3;
 
-			Sleep(5);
-			pacman.join();
+			cout << "Game Over!"<<endl<<endl << "Your final score was:  " << punts << endl;
 
-			ghA.join();
-			ghB.join();
-			ghC.join();
-			ghD.join();
+			system("pause");
 
+			std::system("cls");
+			sceneState = 0;
 
-			Sleep(110);
 		}
+	#pragma endregion
 
+		else if (sceneState == 2) {
+			cout << "Top 10" << endl;
 
-		for (int i = 0; i <= vides; i++) {
-			gotoxy(5, i + 27);
-			printf(" ");
+			system("pause");
+			sceneState = 0;
 		}
-
-		system("pause>NULL");
-		return 0;
-
-	}
-}
+		else if (sceneState == 3) {
+			sceneState = 0;
+		}
+		else if (sceneState == 4) {
+			sceneState = 0;
+		}
+		else if (sceneState == 5) {
+			sceneState = 0;
+			cout << "\nGoodBye!" << endl;
+			mustExit = true;
+		}
+			}
+		}
+	

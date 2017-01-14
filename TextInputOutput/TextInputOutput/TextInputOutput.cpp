@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 using namespace std;
+
 struct jugadoresT {
 	string name;
 	int score;
@@ -121,9 +122,9 @@ void CreatePlayerFile(string playerName) {
 		aPlayer.topInterno[i] = 0;
 	}
 
-	playerName += ".txt";
+//	playerName += ".txt";
 	ofstream archivoSalidas;
-	archivoSalidas.open(playerName);
+	archivoSalidas.open(playerName+".txt");
 	archivoSalidas << "Top10\n" << aPlayer.topInterno[0] << "\n" << aPlayer.topInterno[1] << "\n" << aPlayer.topInterno[2] << "\n" << aPlayer.topInterno[3] << "\n" << aPlayer.topInterno[4] << "\n" << aPlayer.topInterno[5] << "\n" << aPlayer.topInterno[6] << "\n" << aPlayer.topInterno[7] << "\n" << aPlayer.topInterno[8] << "\n" << aPlayer.topInterno[9] << "\nLogros\n" << aPlayer.logros[0]<<"\n"<<aPlayer.logros[1] << "\n" << aPlayer.logros[2] << "\n" << aPlayer.logros[3] << "\n" << aPlayer.logros[4];
 	archivoSalidas.close();
 }

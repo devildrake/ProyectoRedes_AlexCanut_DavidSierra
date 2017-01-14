@@ -156,9 +156,18 @@ int __cdecl main(void)
 		//cout << "1-- Yes" << endl;
 		//cout << "0-- No" << endl;
 
+		//! es fin de lectura
+
+
 		for (int i = 0; i < msgL; i++) {
-			if (recvbuflen == '\0')
-			break;
+
+			if (recvbuf[1] == '1') {
+			
+			}
+
+			if (recvbuf[i] == '!') {
+				break;
+			}
 
 			else {
 				cout <<recvbuf[i];
