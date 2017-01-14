@@ -23,7 +23,7 @@ int __cdecl main()
 	struct addrinfo *result = NULL,
 		*ptr = NULL,
 		hints;
-	char *sendbuf = "this is a test";
+	char *sendbuf = "PLSPLSPLS";
 	char recvbuf[DEFAULT_BUFLEN];
 	int iResult;
 	int recvbuflen = DEFAULT_BUFLEN;
@@ -41,7 +41,7 @@ int __cdecl main()
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// Resolve the server address and port
-	iResult = getaddrinfo("localhost", DEFAULT_PORT, &hints, &result);
+	iResult = getaddrinfo("127.0.0.1", DEFAULT_PORT, &hints, &result);
 	if (iResult != 0) {
 		printf("getaddrinfo failed with error: %d\n", iResult);
 		WSACleanup();
