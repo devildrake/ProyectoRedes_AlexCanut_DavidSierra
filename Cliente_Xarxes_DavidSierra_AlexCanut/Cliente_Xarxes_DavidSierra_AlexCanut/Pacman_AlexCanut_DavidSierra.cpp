@@ -468,7 +468,9 @@ void main() {
 			cout << "Bienvenido a Pacman " << userName<<" !"<<   endl << endl;
 		}
 		
-		if (sceneState == 0) {
+		if (sceneState == 0) 
+		{
+			std::system("cls"); 
 			int a;
 			
 			cout << "Ests en el menu principal" << endl;
@@ -545,7 +547,6 @@ void main() {
 
 			system("pause");
 
-			std::system("cls");
 			sceneState = 0;
 
 		}

@@ -5,6 +5,8 @@
 #include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
+#include <iostream>
 
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
@@ -12,18 +14,24 @@
 #pragma comment (lib, "Mswsock.lib")
 #pragma comment (lib, "AdvApi32.lib")
 
+using namespace std;
 
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "27015"
 
-int __cdecl main()
+struct jugadoresT {
+	string name;
+	int score;
+};
+
+void main()
 {
 	WSADATA wsaData;
 	SOCKET ConnectSocket = INVALID_SOCKET;
 	struct addrinfo *result = NULL,
 		*ptr = NULL,
 		hints;
-	char *sendbuf = "PLSPLSPLS";
+	char *sendbuf = "1";
 	char recvbuf[DEFAULT_BUFLEN];
 	int iResult;
 	int recvbuflen = DEFAULT_BUFLEN;
@@ -32,7 +40,6 @@ int __cdecl main()
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
 		printf("WSAStartup failed with error: %d\n", iResult);
-		return 1;
 	}
 
 	ZeroMemory(&hints, sizeof(hints));
@@ -41,11 +48,10 @@ int __cdecl main()
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// Resolve the server address and port
-	iResult = getaddrinfo("127.0.0.1", DEFAULT_PORT, &hints, &result);
+	iResult = getaddrinfo("192.168.1.69", DEFAULT_PORT, &hints, &result);
 	if (iResult != 0) {
 		printf("getaddrinfo failed with error: %d\n", iResult);
 		WSACleanup();
-		return 1;
 	}
 
 	// Attempt to connect to an address until one succeeds
@@ -57,7 +63,6 @@ int __cdecl main()
 		if (ConnectSocket == INVALID_SOCKET) {
 			printf("socket failed with error: %ld\n", WSAGetLastError());
 			WSACleanup();
-			return 1;
 		}
 
 		// Connect to server.
@@ -75,7 +80,6 @@ int __cdecl main()
 	if (ConnectSocket == INVALID_SOCKET) {
 		printf("Unable to connect to server!\n");
 		WSACleanup();
-		return 1;
 	}
 
 	// Send an initial buffer
@@ -85,7 +89,6 @@ int __cdecl main()
 		printf("send failed with error: %d\n", WSAGetLastError());
 		closesocket(ConnectSocket);
 		WSACleanup();
-		return 1;
 	}
 
 	printf("Bytes Sent: %ld\n", iResult);
@@ -96,7 +99,6 @@ int __cdecl main()
 		printf("shutdown failed with error: %d\n", WSAGetLastError());
 		closesocket(ConnectSocket);
 		WSACleanup();
-		return 1;
 	}
 
 	// Receive until the peer closes the connection
@@ -111,10 +113,48 @@ int __cdecl main()
 			printf("recv failed with error: %d\n", WSAGetLastError());
 
 	} while (iResult > 0);
+	jugadoresT top10[10];
+	int contadorNames=0;
+	int contadorScores=0;
+	bool foundName = true;
+	bool foundScore = false; 
+	string temp="";
+	for (int i = 0;i < recvbuflen;i++) {
+
+		if (i == 50) {
+			cout << "joder" << endl;
+		}
+
+		if (recvbuf[i] == '!') {
+			top10[9].score = stoi(temp);
+			break;
+		}
+
+		if (recvbuf[i] == '?') {
+			if (foundName) {
+				top10[contadorNames].name = temp;
+				temp = "";
+				contadorNames++;
+			}
+			else if (foundScore) {
+				top10[contadorScores].score = stoi(temp);
+				temp = "";
+				contadorScores++;
+			}
+			foundName = !foundName;
+			foundScore = !foundScore;
+		}
+		else {
+			temp += recvbuf[i];
+		}
+	}
+	for (int i = 0;i < 10;i++) {
+		cout << top10[i].name << " " << top10[i].score<<endl;
+	}
+
 
 	// cleanup
 	closesocket(ConnectSocket);
 	WSACleanup();
 
-	return 0;
 }
