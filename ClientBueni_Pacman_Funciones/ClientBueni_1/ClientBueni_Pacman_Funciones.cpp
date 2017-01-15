@@ -91,6 +91,83 @@ int color[7] = {
 	0x00F //Blanco
 };
 
+void selection_sort(jugadoresT arr[], int length) {
+	int minPos;
+	jugadoresT tmp;
+	for (int i = 0; i < length; i++) {
+		minPos = i;
+
+		for (int j = i + 1; j < length; j++) {
+			if (arr[i].score < arr[j].score) {
+				minPos = j;
+			}
+		}
+		tmp = arr[i];
+		arr[i] = arr[minPos];
+		arr[minPos] = tmp;
+	}
+}
+
+void selection_sortInteger(int arr[], int length) {
+	int minPos;
+	int tmp;
+	for (int i = 0; i < length; i++) {
+		minPos = i;
+
+		for (int j = i + 1; j < length; j++) {
+			if (arr[i] < arr[j]) {
+				minPos = j;
+			}
+		}
+		tmp = arr[i];
+		arr[i] = arr[minPos];
+		arr[minPos] = tmp;
+	}
+}
+
+void CheckInsertTop10(jugadoresT arr[], int length, jugadoresT toInsert) {
+	jugadoresT tmp;
+	jugadoresT tmp2;
+	bool found = false;
+
+	for (int i = 0; i < length; i++) {
+		if (arr[i].score<toInsert.score && !found)
+		{
+			tmp = arr[i];
+			arr[i] = toInsert;
+			found = true;
+			i++;
+		}
+		else if (found) {
+			tmp2 = arr[i];
+			arr[i] = tmp;
+			tmp = tmp2;
+		}
+	}
+	selection_sort(arr, length);
+}
+
+void CheckInsertTop10Personal(jugador* elPlayer, int laPuntuacion) {
+	bool found = false;
+	int tmp;
+	int tmp2;
+	for (int i = 0; i < 10; i++) {
+		if (elPlayer->topInterno[i]<laPuntuacion && !found)
+		{
+			tmp = elPlayer->topInterno[i];
+			elPlayer->topInterno[i] = laPuntuacion;
+			found = true;
+			i++;
+		}
+		else if (found) {
+			tmp2 = elPlayer->topInterno[i];
+			elPlayer->topInterno[i] = tmp;
+			tmp = tmp2;
+		}
+	}
+	selection_sortInteger(elPlayer->topInterno, 10);
+}
+
 struct fantasma {
 	int fdir; //direcció del fantasma que pot prendre valors del 0-3 i pot ser inicialitzat rand() % 4
 	int _x, _y; // posicíó del fantasma
@@ -764,6 +841,329 @@ int __cdecl client_ask(int whot,jugadoresT* top10,jugador* elPlayer)
 
 		 return 0;
 	 }
+	  else if (whot == 3) {
+		  WSADATA wsaData;
+		  SOCKET ConnectSocket = INVALID_SOCKET;
+		  struct addrinfo *result = NULL,
+			  *ptr = NULL,
+			  hints;
+
+		  string stringMensaje = "3"+top10[0].name + "?" + to_string(top10[0].score) + "?" + top10[1].name + "?" + to_string(top10[1].score) + "?" + top10[2].name + "?" + to_string(top10[2].score) + "?" + top10[3].name + "?" + to_string(top10[3].score) + "?" + top10[4].name + "?" + to_string(top10[4].score) + "?" + top10[5].name + "?" + to_string(top10[5].score) + "?" + top10[6].name + "?" + to_string(top10[6].score) + "?" + top10[7].name + "?" + to_string(top10[7].score) + "?" + top10[8].name + "?" + to_string(top10[8].score) + "?" + top10[9].name + "?" + to_string(top10[9].score) + "!";
+
+		  char* S = new char[stringMensaje.length() + 1];
+
+		  strcpy(S, stringMensaje.c_str());
+
+		  char *sendbuf = S;
+
+		  char recvbuf[DEFAULT_BUFLEN];
+		  int iResult;
+		  int recvbuflen = DEFAULT_BUFLEN;
+
+		  // Initialize Winsock
+		  iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+		  if (iResult != 0) {
+			  printf("WSAStartup failed with error: %d\n", iResult);
+			  return 1;
+		  }
+
+		  ZeroMemory(&hints, sizeof(hints));
+		  hints.ai_family = AF_UNSPEC;
+		  hints.ai_socktype = SOCK_STREAM;
+		  hints.ai_protocol = IPPROTO_TCP;
+
+		  // Resolve the server address and port
+		  iResult = getaddrinfo("192.168.1.69", DEFAULT_PORT, &hints, &result);
+		  if (iResult != 0) {
+			  printf("getaddrinfo failed with error: %d\n", iResult);
+			  WSACleanup();
+			  return 1;
+		  }
+
+		  // Attempt to connect to an address until one succeeds
+		  for (ptr = result; ptr != NULL; ptr = ptr->ai_next) {
+
+			  // Create a SOCKET for connecting to server
+			  ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype,
+				  ptr->ai_protocol);
+			  if (ConnectSocket == INVALID_SOCKET) {
+				  printf("socket failed with error: %ld\n", WSAGetLastError());
+				  WSACleanup();
+				  return 1;
+			  }
+
+			  // Connect to server.
+			  iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+			  if (iResult == SOCKET_ERROR) {
+				  closesocket(ConnectSocket);
+				  ConnectSocket = INVALID_SOCKET;
+				  continue;
+			  }
+			  break;
+		  }
+
+		  freeaddrinfo(result);
+
+		  if (ConnectSocket == INVALID_SOCKET) {
+			  printf("Unable to connect to server!\n");
+			  WSACleanup();
+			  return 1;
+		  }
+
+		  // Send an initial buffer
+		  iResult = send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0);
+
+		  if (iResult == SOCKET_ERROR) {
+			  printf("send failed with error: %d\n", WSAGetLastError());
+			  closesocket(ConnectSocket);
+			  WSACleanup();
+			  return 1;
+		  }
+
+		  printf("Bytes Sent: %ld\n", iResult);
+
+		  // shutdown the connection since no more data will be sent
+		  iResult = shutdown(ConnectSocket, SD_SEND);
+		  if (iResult == SOCKET_ERROR) {
+			  printf("shutdown failed with error: %d\n", WSAGetLastError());
+			  closesocket(ConnectSocket);
+			  WSACleanup();
+			  return 1;
+		  }
+
+		  // Receive until the peer closes the connection
+		  do {
+
+			  iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+			  if (iResult > 0)
+				  printf("Bytes received: %d\n", iResult);
+			  else if (iResult == 0)
+				  printf("Connection closed\n");
+			  else
+				  printf("recv failed with error: %d\n", WSAGetLastError());
+
+		  } while (iResult > 0);
+
+		  cout << "OYOYOYOY" << endl;
+		  cout << recvbuf << endl;
+		  bool foundScore = false;
+
+		  bool findBools = false;
+		  bool findScore = true;
+		  int contadorLogros = 0;
+		  int contadorScoresPersonales = 0;
+		  string temp = "";
+
+		  for (int i = 0;i < recvbuflen;i++) {
+			  if (recvbuf[i] == '!') {
+				  break;
+			  }
+
+			  if (findScore) {
+				  if (recvbuf[i] != '?') {
+					  temp += recvbuf[i];
+				  }
+				  else if (recvbuf[i] == '_') {
+					  elPlayer->topInterno[contadorScoresPersonales] = stoi(temp);
+					  contadorScoresPersonales++;
+					  temp = "";
+					  findBools = true;
+					  foundScore = false;
+				  }
+				  else {
+					  elPlayer->topInterno[contadorScoresPersonales] = stoi(temp);
+					  contadorScoresPersonales++;
+					  temp = "";
+				  }
+			  }
+			  else if (findBools) {
+				  if (recvbuf[i] == '?') {
+					  if (stoi(temp) == 1) {
+						  elPlayer->logros[contadorLogros] = true;
+						  contadorLogros++;
+					  }
+					  else {
+						  elPlayer->logros[contadorLogros] = false;
+						  contadorLogros++;
+					  }
+
+					  temp = "";
+				  }
+				  else {
+					  temp += recvbuf[i];
+				  }
+			  }
+
+		  }
+
+		  // cleanup
+		  closesocket(ConnectSocket);
+		  WSACleanup();
+
+		  return 0;
+	  }
+	  else if (whot==4) {
+
+		  WSADATA wsaData;
+		  SOCKET ConnectSocket = INVALID_SOCKET;
+		  struct addrinfo *result = NULL,
+			  *ptr = NULL,
+			  hints;
+		  string stringMensaje = "4"+to_string(elPlayer->topInterno[0]) + "?" + to_string(elPlayer->topInterno[1]) + "?" + to_string(elPlayer->topInterno[2]) + "?" + to_string(elPlayer->topInterno[3]) + "?" + to_string(elPlayer->topInterno[4]) + "?" + to_string(elPlayer->topInterno[5]) + "?" + to_string(elPlayer->topInterno[6]) + "?" + to_string(elPlayer->topInterno[7]) + "?" + to_string(elPlayer->topInterno[8]) + "?" + to_string(elPlayer->topInterno[9]) + "_" + to_string(elPlayer->logros[0]) + "?" + to_string(elPlayer->logros[1]) + "?" + to_string(elPlayer->logros[2]) + "?" + to_string(elPlayer->logros[3]) + "?" + to_string(elPlayer->logros[4]) + "!";
+
+		  char* S = new char[stringMensaje.length() + 1];
+
+		  strcpy(S, stringMensaje.c_str());
+
+		  char *sendbuf = S;
+
+		  char recvbuf[DEFAULT_BUFLEN];
+		  int iResult;
+		  int recvbuflen = DEFAULT_BUFLEN;
+
+		  // Initialize Winsock
+		  iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+		  if (iResult != 0) {
+			  printf("WSAStartup failed with error: %d\n", iResult);
+			  return 1;
+		  }
+
+		  ZeroMemory(&hints, sizeof(hints));
+		  hints.ai_family = AF_UNSPEC;
+		  hints.ai_socktype = SOCK_STREAM;
+		  hints.ai_protocol = IPPROTO_TCP;
+
+		  // Resolve the server address and port
+		  iResult = getaddrinfo("192.168.1.69", DEFAULT_PORT, &hints, &result);
+		  if (iResult != 0) {
+			  printf("getaddrinfo failed with error: %d\n", iResult);
+			  WSACleanup();
+			  return 1;
+		  }
+
+		  // Attempt to connect to an address until one succeeds
+		  for (ptr = result; ptr != NULL; ptr = ptr->ai_next) {
+
+			  // Create a SOCKET for connecting to server
+			  ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype,
+				  ptr->ai_protocol);
+			  if (ConnectSocket == INVALID_SOCKET) {
+				  printf("socket failed with error: %ld\n", WSAGetLastError());
+				  WSACleanup();
+				  return 1;
+			  }
+
+			  // Connect to server.
+			  iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+			  if (iResult == SOCKET_ERROR) {
+				  closesocket(ConnectSocket);
+				  ConnectSocket = INVALID_SOCKET;
+				  continue;
+			  }
+			  break;
+		  }
+
+		  freeaddrinfo(result);
+
+		  if (ConnectSocket == INVALID_SOCKET) {
+			  printf("Unable to connect to server!\n");
+			  WSACleanup();
+			  return 1;
+		  }
+
+		  // Send an initial buffer
+		  iResult = send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0);
+
+		  if (iResult == SOCKET_ERROR) {
+			  printf("send failed with error: %d\n", WSAGetLastError());
+			  closesocket(ConnectSocket);
+			  WSACleanup();
+			  return 1;
+		  }
+
+		  printf("Bytes Sent: %ld\n", iResult);
+
+		  // shutdown the connection since no more data will be sent
+		  iResult = shutdown(ConnectSocket, SD_SEND);
+		  if (iResult == SOCKET_ERROR) {
+			  printf("shutdown failed with error: %d\n", WSAGetLastError());
+			  closesocket(ConnectSocket);
+			  WSACleanup();
+			  return 1;
+		  }
+
+		  // Receive until the peer closes the connection
+		  do {
+
+			  iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+			  if (iResult > 0)
+				  printf("Bytes received: %d\n", iResult);
+			  else if (iResult == 0)
+				  printf("Connection closed\n");
+			  else
+				  printf("recv failed with error: %d\n", WSAGetLastError());
+
+		  } while (iResult > 0);
+
+		  cout << "OYOYOYOY" << endl;
+		  cout << recvbuf << endl;
+		  bool foundScore = false;
+
+		  bool findBools = false;
+		  bool findScore = true;
+		  int contadorLogros = 0;
+		  int contadorScoresPersonales = 0;
+		  string temp = "";
+
+		  for (int i = 0;i < recvbuflen;i++) {
+			  if (recvbuf[i] == '!') {
+				  break;
+			  }
+
+			  if (findScore) {
+				  if (recvbuf[i] != '?') {
+					  temp += recvbuf[i];
+				  }
+				  else if (recvbuf[i] == '_') {
+					  elPlayer->topInterno[contadorScoresPersonales] = stoi(temp);
+					  contadorScoresPersonales++;
+					  temp = "";
+					  findBools = true;
+					  foundScore = false;
+				  }
+				  else {
+					  elPlayer->topInterno[contadorScoresPersonales] = stoi(temp);
+					  contadorScoresPersonales++;
+					  temp = "";
+				  }
+			  }
+			  else if (findBools) {
+				  if (recvbuf[i] == '?') {
+					  if (stoi(temp) == 1) {
+						  elPlayer->logros[contadorLogros] = true;
+						  contadorLogros++;
+					  }
+					  else {
+						  elPlayer->logros[contadorLogros] = false;
+						  contadorLogros++;
+					  }
+
+					  temp = "";
+				  }
+				  else {
+					  temp += recvbuf[i];
+				  }
+			  }
+
+		  }
+
+		  // cleanup
+		  closesocket(ConnectSocket);
+		  WSACleanup();
+
+		  return 0;
+
+	  }
 }
 
 
@@ -771,6 +1171,11 @@ void main()
 {
 	jugador personalScores;
 	jugadoresT top10[10];
+	jugador prevPersonalScores;
+
+	int prevVides = 3;
+	
+
 
 	client_ask(1,top10,&personalScores);
 
@@ -786,6 +1191,7 @@ void main()
 
 		if (validate(userName)) {
 			client_ask(2, top10, &personalScores);
+			prevPersonalScores = personalScores;
 			userRegistered = true;
 			sceneState = 0;
 		}
@@ -822,7 +1228,7 @@ void main()
 		else if (sceneState == 1) {
 			//Vacia la consola
 			std::system("cls");
-
+			auto start_time = std::chrono::high_resolution_clock::now();
 			pintar_mapa();
 			srand(time(NULL));
 
@@ -839,6 +1245,32 @@ void main()
 			//while (vides > 0 && punts < 1900) {
 			while (!gameOver) {
 				marcador();
+				if (vides != prevVides) {
+					prevVides = vides;
+					start_time = std::chrono::high_resolution_clock::now();
+					if (punts == 0) {
+						personalScores.logros[0] = true;
+					}
+				}
+				auto current_time = chrono::high_resolution_clock::now();
+
+				
+				if (personalScores.logros[3]==false) {
+					if (std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count() > 30) {
+							personalScores.logros[3] = true;
+							
+					
+				}
+			}
+				else if (personalScores.logros[4] == false) {
+					if (chrono::duration_cast<chrono::seconds>(current_time - start_time).count() > 60) {
+							personalScores.logros[4] = true;
+						
+					}
+				}
+				
+				
+
 				rand1 = rand() % 4;
 				rand2 = rand() % 4;
 				rand3 = rand() % 4;
@@ -875,8 +1307,22 @@ void main()
 			setCColor(0x00F);
 			gameOver = false;
 			vides = 3;
-
+			jugadoresT elPlayerPalTop{userName,punts};
+			CheckInsertTop10(top10,10,elPlayerPalTop);
 			cout << "Game Over!" << endl << endl << "Your final score was:  " << punts << endl;
+			
+			client_ask(3, top10, &personalScores);
+			
+			if (punts >= 250) {
+				personalScores.logros[1] = true;
+			}
+			if (punts >= 500) {
+				personalScores.logros[2] = true;
+			}
+
+			CheckInsertTop10Personal(&personalScores,elPlayerPalTop.score);
+
+			client_ask(4, top10, &personalScores);
 
 			system("pause");
 
@@ -886,8 +1332,11 @@ void main()
 #pragma endregion
 
 		else if (sceneState == 2) {
-			cout << "Top 10" << endl;
+			cout << "Top 10" << endl<<endl;
+			for (int i = 0;i < 10;i++) {
+				cout << i + 1 << ": "<< top10[i].name<< "-------------"<<top10[i].score<<endl;
 
+			}
 			system("pause");
 			sceneState = 0;
 		}
@@ -902,6 +1351,42 @@ void main()
 			sceneState = 0;
 		}
 		else if (sceneState == 4) {
+			string howTo[5];
+			string achName[5];
+			achName[0] = "Not for you";
+			achName[1] = "Getting the hang of it";
+			achName[2] = "Not bad";
+			achName[3] = "Almost fast enough";
+			achName[4] = "You like running eh?";
+
+			howTo[0] = "No conseguir ningun punto y morir";
+			howTo[1] = "Consigue 50 puntos";
+			howTo[2] = "Consigue 100 puntos";
+			howTo[3] = "Sobrevive medio minuto seguido";
+			howTo[4] = "Sobrevive un minuto seguido";
+
+			cout <<"Logros del jugador "<< userName << ":" << endl;
+
+			for (int i = 0;i < 5;i++) {
+				if (i != 0)
+					cout << endl;
+				cout << achName[i];
+
+				if (personalScores.logros[i] == 1) {
+					cout << "   (Owned)" << endl;
+				}
+				else {
+					cout << "   (Not owned) ---" << howTo[i]<<endl;
+				}
+			}
+
+			//No fer cap punt i morir
+			//Aconseguir 50 punts 
+			//Aconseguir 100 punts
+			//Sobreviure mig minut en una partida
+			//Sobreviure un minut en una partida
+
+			system("pause");
 			sceneState = 0;
 		}
 		else if (sceneState == 5) {
@@ -909,6 +1394,7 @@ void main()
 			cout << "\nGoodBye!" << endl;
 			mustExit = true;
 		}
+		else { sceneState == 0; }
 	}
 		}
 

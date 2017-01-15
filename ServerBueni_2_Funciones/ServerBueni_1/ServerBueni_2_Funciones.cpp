@@ -86,6 +86,24 @@ void CreatePlayerFile(string playerName) {
 	archivoSalidas.close();
 }
 
+void UpdateTop10(jugadoresT* elTop10) {
+	ofstream archivoSalidas;
+	archivoSalidas.open("Top10.txt");
+	archivoSalidas << "top10\nplayer\n" << elTop10[0].name << "\n" << to_string(elTop10[0].score) << "\nplayer\n" << elTop10[1].name << "\n" << to_string(elTop10[1].score) << "\nplayer\n" << elTop10[2].name << "\n" << to_string(elTop10[2].score) << "\nplayer\n" << elTop10[3].name << "\n" << to_string(elTop10[3].score) << "\nplayer\n" << elTop10[4].name << "\n" << to_string(elTop10[4].score) << "\nplayer\n" << elTop10[5].name << "\n" << to_string(elTop10[5].score) << "\nplayer\n" << elTop10[6].name << "\n" << to_string(elTop10[6].score) << "\nplayer\n" << elTop10[7].name << "\n" << to_string(elTop10[7].score) << "\nplayer\n" << elTop10[8].name << "\n" << to_string(elTop10[8].score) << "\nplayer\n" << elTop10[9].name << "\n" << to_string(elTop10[9].score) << "\n";
+	archivoSalidas.close();
+}
+
+void UpdatePersonalScore(jugador* aPlayer) {
+	string playerName = aPlayer->name;
+	playerName.erase(playerName.end() - 4, playerName.end());
+	cout << "NOMBRE A ESCRIBIR " << playerName << endl;
+	ofstream archivoSalidas;
+	archivoSalidas.open(playerName + ".txt");
+	archivoSalidas << "Top10\n" << aPlayer->topInterno[0] << "\n" << aPlayer->topInterno[1] << "\n" << aPlayer->topInterno[2] << "\n" << aPlayer->topInterno[3] << "\n" << aPlayer->topInterno[4] << "\n" << aPlayer->topInterno[5] << "\n" << aPlayer->topInterno[6] << "\n" << aPlayer->topInterno[7] << "\n" << aPlayer->topInterno[8] << "\n" << aPlayer->topInterno[9] << "\nLogros\n" << aPlayer->logros[0] << "\n" << aPlayer->logros[1] << "\n" << aPlayer->logros[2] << "\n" << aPlayer->logros[3] << "\n" << aPlayer->logros[4];
+	archivoSalidas.close();
+}
+
+
 void CreateTop10() {
 	jugadoresT arrayVacio[10];
 	for (int i = 0; i < 10; i++) {
@@ -131,6 +149,8 @@ void CheckInsert(jugadoresT arr[], int length, jugadoresT toInsert, bool* should
 	}
 	selection_sort(arr, length);
 }
+
+
 
 int __cdecl main(void)
 {
@@ -240,7 +260,7 @@ int __cdecl main(void)
 	}
 
 	freeaddrinfo(result);
-	
+
 	while (!finished) {
 
 		iResult = listen(ListenSocket, SOMAXCONN);
@@ -283,208 +303,338 @@ int __cdecl main(void)
 
 				printf("Bytes received: %d\n", iResult);
 			}
-				else if (iResult == 0) //THIS BULLSHIT
-					printf("Connection closing...\n");
-				else { //AND THIS BULLSHIT
-					printf("recv failed with error: %d\n", WSAGetLastError());
+			else if (iResult == 0) //THIS BULLSHIT
+				printf("Connection closing...\n");
+			else { //AND THIS BULLSHIT
+				printf("recv failed with error: %d\n", WSAGetLastError());
+				closesocket(ClientSocket);
+				WSACleanup();
+				return 1;
+			}
+			sentPersonal = true;
+		} while (iResult > 0);
+
+		// Echo the buffer back to the sender
+		string superString = losPlayers[0].name + "?" + to_string(losPlayers[0].score) + "?" + losPlayers[1].name + "?" + to_string(losPlayers[1].score) + "?" + losPlayers[2].name + "?" + to_string(losPlayers[2].score) + "?" + losPlayers[3].name + "?" + to_string(losPlayers[3].score) + "?" + losPlayers[4].name + "?" + to_string(losPlayers[4].score) + "?" + losPlayers[5].name + "?" + to_string(losPlayers[5].score) + "?" + losPlayers[6].name + "?" + to_string(losPlayers[6].score) + "?" + losPlayers[7].name + "?" + to_string(losPlayers[7].score) + "?" + losPlayers[8].name + "?" + to_string(losPlayers[8].score) + "?" + losPlayers[9].name + "?" + to_string(losPlayers[9].score) + "!";
+		string aName;
+
+
+		char * S = new char[superString.length() + 1];
+		if (recvbuf[0] == '1') {
+
+			cout << "TryingTodoShit" << endl;
+
+			//Si recibe un uno tiene que hacer un send de los datos del Top 10 leídos desde el archivo
+
+
+			std::strcpy(S, superString.c_str());
+
+
+			cout << S << endl;
+
+			iSendResult = send(ClientSocket, S, superString.length(), 0);
+
+
+
+		}
+
+
+		else if (recvbuf[0] == '2') {
+			Sleep(100);
+			bool stop = false;
+			sendPersonal = true;
+			sentPersonal = false;
+			aName = "";
+			for (int i = 0; i < recvbuflen; i++) {
+				if (!stop) {
+					if (recvbuf[i] == '!') {
+						stop = true;
+					}
+					else {
+						aName += recvbuf[i];
+					}
+				}
+				else {
+					break;
+				}
+
+			}
+			aName.erase(0, 1);
+
+			newName = aName;
+
+			if (!exist(aName + ".txt")) {
+				cout << "Creating file named...  " << aName << ".txt" << endl;
+				CreatePlayerFile(aName);
+			}
+
+
+			if (exist(aName + ".txt")) {
+
+				cout << "Reading file named...  " << aName << ".txt" << endl;
+
+				personalScore.name = aName;
+				aName += ".txt";
+				ifstream playerFile(aName);
+
+
+				if (playerFile.is_open())
+				{
+					while (getline(playerFile, line))
+					{
+						if (hasReadTopPlayer) {
+
+							if (reading) {
+
+								int temp = stoi(line);
+
+								if (temp == 1) {
+									personalScore.logros[j] = true;
+								}
+
+								else {
+									personalScore.logros[j] = false;
+								}
+								j++;
+								if (j > 5) {
+									hasReadTopPlayer = false;
+									reading = false;
+								}
+							}
+							if (hasReadTopPlayer) {
+								reading = true;
+							}
+						}
+						if (mustReadPlayer) {
+							personalScore.topInterno[j] = stoi(line);
+							cout << "assiging variable with " << stoi(line) << " to " << j << endl;
+							j++;
+							if (j > 9) {
+								mustReadPlayer = false;
+								hasReadTopPlayer = true;
+								j = 0;
+							}
+						}
+						if (line == "Top10") {
+							mustReadPlayer = true;
+						}
+					}
+
+					playerFile.close();
+				}
+			}
+
+			//	for (int x = 0; x < 10; x++) {
+			//		cout << personalScore.topInterno[i] << endl;
+			//	}
+			if (sendPersonal && !sentPersonal) {
+				personalScore.name = aName;
+
+				string secondSuperString = to_string(personalScore.topInterno[0]) + "?" + to_string(personalScore.topInterno[1]) + "?" + to_string(personalScore.topInterno[2]) + "?" + to_string(personalScore.topInterno[3]) + "?" + to_string(personalScore.topInterno[4]) + "?" + to_string(personalScore.topInterno[5]) + "?" + to_string(personalScore.topInterno[6]) + "?" + to_string(personalScore.topInterno[7]) + "?" + to_string(personalScore.topInterno[8]) + "?" + to_string(personalScore.topInterno[9]) + "_" + to_string(personalScore.logros[0]) + "?" + to_string(personalScore.logros[1]) + "?" + to_string(personalScore.logros[2]) + "?" + to_string(personalScore.logros[3]) + "?" + to_string(personalScore.logros[4]) + "!";
+
+				cout << " I think it should send " << secondSuperString << endl;
+
+				char * S_2 = new char[secondSuperString.length() + 1];
+				std::strcpy(S_2, secondSuperString.c_str());
+
+				iSendResult2 = send(ClientSocket, S_2, secondSuperString.length(), 0);
+
+
+
+				cout << "secondSuperString:" << secondSuperString << endl;
+
+				//iSendResult = send(ClientSocket, recvbuf, iResult, 0);
+				if (iSendResult2 == SOCKET_ERROR) {
+					printf("send failed with error: %d\n", WSAGetLastError());
 					closesocket(ClientSocket);
 					WSACleanup();
 					return 1;
 				}
-				sentPersonal = true;
-			} while (iResult > 0);
+				printf("Bytes sent: %d\n", iSendResult2);
+			}
+		}
 
-			// Echo the buffer back to the sender
-			string superString = losPlayers[0].name + "?" + to_string(losPlayers[0].score) + "?" + losPlayers[1].name + "?" + to_string(losPlayers[1].score) + "?" + losPlayers[2].name + "?" + to_string(losPlayers[2].score) + "?" + losPlayers[3].name + "?" + to_string(losPlayers[3].score) + "?" + losPlayers[4].name + "?" + to_string(losPlayers[4].score) + "?" + losPlayers[5].name + "?" + to_string(losPlayers[5].score) + "?" + losPlayers[6].name + "?" + to_string(losPlayers[6].score) + "?" + losPlayers[7].name + "?" + to_string(losPlayers[7].score) + "?" + losPlayers[8].name + "?" + to_string(losPlayers[8].score) + "?" + losPlayers[9].name + "?" + to_string(losPlayers[9].score) + "!";
-			string aName;
+		else if (recvbuf[0] == '3') {
+			int contadorNames = 0;
+			int contadorScores = 0;
+			bool foundName = true;
+			bool foundScore = false;
+			string temp = "";
 
+			for (int i = 1; i < recvbuflen; i++) {
 
-			char * S = new char[superString.length() + 1];
-			if (recvbuf[0] == '1') {
+				if (recvbuf[i] == '!') {
+					losPlayers[9].score = stoi(temp);
+					break;
+				}
 
-				cout << "TryingTodoShit" << endl;
-
-				//Si recibe un uno tiene que hacer un send de los datos del Top 10 leídos desde el archivo
-
-
-				std::strcpy(S, superString.c_str());
-
-
-				cout << S << endl;
-
-				iSendResult = send(ClientSocket, S, superString.length(), 0);
-
-
-
+				if (recvbuf[i] == '?') {
+					if (foundName) {
+						losPlayers[contadorNames].name = temp;
+						temp = "";
+						contadorNames++;
+					}
+					else if (foundScore) {
+						losPlayers[contadorScores].score = stoi(temp);
+						temp = "";
+						contadorScores++;
+					}
+					foundName = !foundName;
+					foundScore = !foundScore;
+				}
+				else {
+					temp += recvbuf[i];
+				}
 			}
 
+			UpdateTop10(losPlayers);
 
-			else if (recvbuf[0] == '2') {
-				Sleep(100);
-				bool stop = false;
-				sendPersonal = true;
-				sentPersonal = false;
-				aName = "";
-				for (int i = 0; i < recvbuflen; i++) {
-					if (!stop) {
-						if (recvbuf[i] == '!') {
-							stop = true;
-						}
-						else {
-							aName += recvbuf[i];
-						}
-					}
-					else {
+			string ok = "ok";
+
+			char * S_2 = new char[ok.length() + 1];
+			std::strcpy(S_2, ok.c_str());
+
+			iSendResult2 = send(ClientSocket, S_2, ok.length(), 0);
+
+			cout << "secondSuperString:" << ok << endl;
+
+			//iSendResult = send(ClientSocket, recvbuf, iResult, 0);
+			if (iSendResult2 == SOCKET_ERROR) {
+				printf("send failed with error: %d\n", WSAGetLastError());
+				closesocket(ClientSocket);
+				WSACleanup();
+				return 1;
+			}
+			printf("Bytes sent: %d\n", iSendResult2);
+
+		}
+		else if (recvbuf[0] == '4') {
+			{
+				bool foundScore = false;
+
+				bool findBools = false;
+				bool findScore = true;
+				int contadorLogros = 0;
+				int contadorScoresPersonales = 0;
+				string temp = "";
+
+				for (int i = 1; i < recvbuflen; i++) {
+					if (recvbuf[i] == '!') {
 						break;
 					}
 
-				}
-				aName.erase(0, 1);
-
-				newName = aName;
-
-				if (!exist(aName + ".txt")) {
-					cout << "Creating file named...  " << aName << ".txt" << endl;
-					CreatePlayerFile(aName);
-				}
-
-
-				if (exist(aName + ".txt")) {
-
-					cout << "Reading file named...  " << aName << ".txt" << endl;
-
-					personalScore.name = aName;
-					aName += ".txt";
-					ifstream playerFile(aName);
-
-
-					if (playerFile.is_open())
-					{
-						while (getline(playerFile, line))
-						{
-							if (hasReadTopPlayer) {
-
-								if (reading) {
-
-									int temp = stoi(line);
-
-									if (temp == 1) {
-										personalScore.logros[j] = true;
-									}
-
-									else {
-										personalScore.logros[j] = false;
-									}
-									j++;
-									if (j > 5) {
-										hasReadTopPlayer = false;
-										reading = false;
-									}
-								}
-								if (hasReadTopPlayer) {
-									reading = true;
-								}
-							}
-							if (mustReadPlayer) {
-								personalScore.topInterno[j] = stoi(line);
-								cout << "assiging variable with " << stoi(line) << " to " << j << endl;
-								j++;
-								if (j > 9) {
-									mustReadPlayer = false;
-									hasReadTopPlayer = true;
-									j = 0;
-								}
-							}
-							if (line == "Top10") {
-								mustReadPlayer = true;
-							}
+					if (findScore) {
+						if (recvbuf[i] != '?') {
+							temp += recvbuf[i];
 						}
+						else if (recvbuf[i] == '_') {
+							personalScore.topInterno[contadorScoresPersonales] = stoi(temp);
+							contadorScoresPersonales++;
+							temp = "";
+							findBools = true;
+							foundScore = false;
+						}
+						else {
+							personalScore.topInterno[contadorScoresPersonales] = stoi(temp);
+							contadorScoresPersonales++;
+							temp = "";
+						}
+					}
+					else if (findBools) {
+						if (recvbuf[i] == '?') {
+							if (stoi(temp) == 1) {
+								personalScore.logros[contadorLogros] = true;
+								contadorLogros++;
+							}
+							else {
+								personalScore.logros[contadorLogros] = false;
+								contadorLogros++;
+							}
 
-						playerFile.close();
+							temp = "";
+						}
+						else {
+							temp += recvbuf[i];
+						}
 					}
 				}
 
-				//	for (int x = 0; x < 10; x++) {
-				//		cout << personalScore.topInterno[i] << endl;
-				//	}
-				if (sendPersonal && !sentPersonal) {
-					personalScore.name = aName;
+				//UpdateTop10(losPlayers);
+				cout <<"elnombre   "<< personalScore.name<<endl;
+				UpdatePersonalScore(&personalScore);
 
-					string secondSuperString = to_string(personalScore.topInterno[0]) + "?" + to_string(personalScore.topInterno[1]) + "?" + to_string(personalScore.topInterno[2]) + "?" + to_string(personalScore.topInterno[3]) + "?" + to_string(personalScore.topInterno[4]) + "?" + to_string(personalScore.topInterno[5]) + "?" + to_string(personalScore.topInterno[6]) + "?" + to_string(personalScore.topInterno[7]) + "?" + to_string(personalScore.topInterno[8]) + "?" + to_string(personalScore.topInterno[9]) + "_" + to_string(personalScore.logros[0]) + "?" + to_string(personalScore.logros[1]) + "?" + to_string(personalScore.logros[2]) + "?" + to_string(personalScore.logros[3]) + "?" + to_string(personalScore.logros[4]) + "!";
+				string ok = "ok";
 
-					cout << " I think it should send " << secondSuperString << endl;
+				char * S_2 = new char[ok.length() + 1];
+				std::strcpy(S_2, ok.c_str());
 
-					char * S_2 = new char[secondSuperString.length() + 1];
-					std::strcpy(S_2, secondSuperString.c_str());
+				iSendResult2 = send(ClientSocket, S_2, ok.length(), 0);
 
-					iSendResult2 = send(ClientSocket, S_2, secondSuperString.length(), 0);
+				cout << "secondSuperString:" << ok << endl;
 
-					
-
-					cout << "secondSuperString:" << secondSuperString << endl;
-
-					//iSendResult = send(ClientSocket, recvbuf, iResult, 0);
-					if (iSendResult2 == SOCKET_ERROR) {
-						printf("send failed with error: %d\n", WSAGetLastError());
-						closesocket(ClientSocket);
-						WSACleanup();
-						return 1;
-					}
-					printf("Bytes sent: %d\n", iSendResult2);
+				//iSendResult = send(ClientSocket, recvbuf, iResult, 0);
+				if (iSendResult2 == SOCKET_ERROR) {
+					printf("send failed with error: %d\n", WSAGetLastError());
+					closesocket(ClientSocket);
+					WSACleanup();
+					return 1;
 				}
+				printf("Bytes sent: %d\n", iSendResult2);
+
+
 			}
-
 			//Emision original
 
+		}
 
-			
 
 		// shutdown the connection since we're done
-		iResult = shutdown(ClientSocket, SD_SEND);
-		if (iResult == SOCKET_ERROR) {
-			printf("shutdown failed with error: %d\n", WSAGetLastError());
-			closesocket(ClientSocket);
-			WSACleanup();
-			return 1;
-		}
-
-		// cleanup
-
-		//cout << "Wanna terminate connecion?" << endl;
-		//cout << "1-- Yes" << endl;
-		//cout << "0-- No" << endl;
-
-		//! es fin de lectura
-
-
-		for (int i = 0; i < msgL; i++) {
-		
-			if (recvbuf[1] == '1') {
-
+			iResult = shutdown(ClientSocket, SD_SEND);
+			if (iResult == SOCKET_ERROR) {
+				printf("shutdown failed with error: %d\n", WSAGetLastError());
+				closesocket(ClientSocket);
+				WSACleanup();
+				return 1;
 			}
 
-			if (recvbuf[i] == '!') {
-				break;
+			// cleanup
+
+			//cout << "Wanna terminate connecion?" << endl;
+			//cout << "1-- Yes" << endl;
+			//cout << "0-- No" << endl;
+
+			//! es fin de lectura
+
+
+			/*for (int i = 0; i < msgL; i++) {
+
+				if (recvbuf[1] == '1') {
+
+				}
+
+				if (recvbuf[i] == '!') {
+					break;
+				}
+
+				else {
+					cout <<recvbuf[i];
+				}
+
+			}
+			cout << endl;
+			once = false;*/
+			//cin >> terminateOrder;
+
+			if (terminateOrder == 1) {
+				finished = true;
 			}
 
-			else {
-				cout <<recvbuf[i];
+			if (finished) {
+
+				closesocket(ListenSocket);
+				closesocket(ClientSocket);
+				WSACleanup();
 			}
-			
-		}
-		cout << endl;
-		once = false;
-		//cin >> terminateOrder;
 
-		if (terminateOrder == 1) {
-			finished = true;
-		}
-
-		if (finished) {
-
-			closesocket(ListenSocket);
-			closesocket(ClientSocket);
-			WSACleanup();
 		}
 	}
-}
