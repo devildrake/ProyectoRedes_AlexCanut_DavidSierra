@@ -28,12 +28,17 @@ using namespace std;
 
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "27015"
-	
+
+//Esta variable global es la IP que tiene el servidor
+PCSTR laIP = "192.168.23.146";
+
+//Struct jugadores del Top
 struct jugadoresT {
 	string name;
 	int score;
 };
 
+//Struct para los datos internos de los jugadores
 struct jugador {
 	string name;
 	int topInterno[10];
@@ -46,6 +51,7 @@ bool mustExit = false;
 bool welcomed = false;
 bool gameOver = false;
 string userName;
+
 
 int rand1 = 0;
 int rand2 = 0;
@@ -67,6 +73,7 @@ mutex mutMov;
 mutex mutPint;
 mutex mutRand;
 
+//Variable que maneja la escena
 int sceneState = 0;
 
 
@@ -91,6 +98,7 @@ int color[7] = {
 	0x00F //Blanco
 };
 
+//Algoritmo para ordenar arrays de jugadoresT
 void selection_sort(jugadoresT arr[], int length) {
 	int minPos;
 	jugadoresT tmp;
@@ -108,6 +116,7 @@ void selection_sort(jugadoresT arr[], int length) {
 	}
 }
 
+//Algoritmo para ordenar arrays de integers
 void selection_sortInteger(int arr[], int length) {
 	int minPos;
 	int tmp;
@@ -125,6 +134,7 @@ void selection_sortInteger(int arr[], int length) {
 	}
 }
 
+//Funcion que comprueba si vale la pena introducir en el top 10 general la puntuación y nombre del jugador parametro
 void CheckInsertTop10(jugadoresT arr[], int length, jugadoresT toInsert) {
 	jugadoresT tmp;
 	jugadoresT tmp2;
@@ -147,6 +157,7 @@ void CheckInsertTop10(jugadoresT arr[], int length, jugadoresT toInsert) {
 	selection_sort(arr, length);
 }
 
+//Funcion que comprueba si vale la pena introducir en el top 10 personal la puntuación del jugador parametro
 void CheckInsertTop10Personal(jugador* elPlayer, int laPuntuacion) {
 	bool found = false;
 	int tmp;
@@ -334,7 +345,6 @@ void borrarPacman(int x, int y) {
 	}
 }
 
-
 void mourePacman()
 {
 	//TODO guardar la posició anterior del pacman
@@ -368,8 +378,6 @@ void mourePacman()
 	pintarPacman(x, y);
 
 }
-
-
 
 fantasma inicialitzarFantasma(int x, int y, int color) {
 	//TODO inicialitzar el fantasma amb les dades donades i la direcció rand() % 4
@@ -532,6 +540,7 @@ bool validate(string aName) {
 	return valid;
 }
 
+//Función que recibe un parametro definiendo la función que debe realizar y punteros a la variable del top10 y del jugador 
 int __cdecl client_ask(int whot,jugadoresT* top10,jugador* elPlayer)
 {
 	if (whot == 1) {
@@ -569,7 +578,8 @@ int __cdecl client_ask(int whot,jugadoresT* top10,jugador* elPlayer)
 		hints.ai_protocol = IPPROTO_TCP;
 
 		// Resolve the server address and port
-		iResult = getaddrinfo("192.168.1.69", DEFAULT_PORT, &hints, &result);
+		//iResult = getaddrinfo("192.168.1.69", DEFAULT_PORT, &hints, &result);
+		iResult = getaddrinfo(laIP, DEFAULT_PORT, &hints, &result);
 		if (iResult != 0) {
 			printf("getaddrinfo failed with error: %d\n", iResult);
 			WSACleanup();
@@ -712,7 +722,8 @@ int __cdecl client_ask(int whot,jugadoresT* top10,jugador* elPlayer)
 		 hints.ai_protocol = IPPROTO_TCP;
 
 		 // Resolve the server address and port
-		 iResult = getaddrinfo("192.168.1.69", DEFAULT_PORT, &hints, &result);
+		// iResult = getaddrinfo("192.168.1.69", DEFAULT_PORT, &hints, &result);
+		 iResult = getaddrinfo(laIP, DEFAULT_PORT, &hints, &result);
 		 if (iResult != 0) {
 			 printf("getaddrinfo failed with error: %d\n", iResult);
 			 WSACleanup();
@@ -873,7 +884,8 @@ int __cdecl client_ask(int whot,jugadoresT* top10,jugador* elPlayer)
 		  hints.ai_protocol = IPPROTO_TCP;
 
 		  // Resolve the server address and port
-		  iResult = getaddrinfo("192.168.1.69", DEFAULT_PORT, &hints, &result);
+		 // iResult = getaddrinfo("192.168.1.69", DEFAULT_PORT, &hints, &result);
+		  iResult = getaddrinfo(laIP, DEFAULT_PORT, &hints, &result);
 		  if (iResult != 0) {
 			  printf("getaddrinfo failed with error: %d\n", iResult);
 			  WSACleanup();
@@ -1034,7 +1046,8 @@ int __cdecl client_ask(int whot,jugadoresT* top10,jugador* elPlayer)
 		  hints.ai_protocol = IPPROTO_TCP;
 
 		  // Resolve the server address and port
-		  iResult = getaddrinfo("192.168.1.69", DEFAULT_PORT, &hints, &result);
+		  //iResult = getaddrinfo("192.168.1.69", DEFAULT_PORT, &hints, &result);
+		  iResult = getaddrinfo(laIP, DEFAULT_PORT, &hints, &result);
 		  if (iResult != 0) {
 			  printf("getaddrinfo failed with error: %d\n", iResult);
 			  WSACleanup();
@@ -1224,6 +1237,9 @@ void main()
 			if (a == 1 || a == 2 || a == 3 || a == 4 || a == 5) {
 				sceneState = a;
 			}
+			else {
+				sceneState = 0;
+			}
 		}
 		else if (sceneState == 1) {
 			//Vacia la consola
@@ -1330,7 +1346,7 @@ void main()
 
 		}
 #pragma endregion
-
+#pragma region Top10
 		else if (sceneState == 2) {
 			cout << "Top 10" << endl<<endl;
 			for (int i = 0;i < 10;i++) {
@@ -1340,6 +1356,8 @@ void main()
 			system("pause");
 			sceneState = 0;
 		}
+#pragma endregion
+#pragma region Top10Personal
 		else if (sceneState == 3) {
 
 			cout << userName << ":"<< endl;
@@ -1350,6 +1368,9 @@ void main()
 			system("pause");
 			sceneState = 0;
 		}
+#pragma endregion
+
+#pragma region Logros
 		else if (sceneState == 4) {
 			string howTo[5];
 			string achName[5];
@@ -1360,8 +1381,8 @@ void main()
 			achName[4] = "You like running eh?";
 
 			howTo[0] = "No conseguir ningun punto y morir";
-			howTo[1] = "Consigue 50 puntos";
-			howTo[2] = "Consigue 100 puntos";
+			howTo[1] = "Consigue 250 puntos";
+			howTo[2] = "Consigue 500 puntos";
 			howTo[3] = "Sobrevive medio minuto seguido";
 			howTo[4] = "Sobrevive un minuto seguido";
 
@@ -1389,11 +1410,15 @@ void main()
 			system("pause");
 			sceneState = 0;
 		}
+#pragma endregion
+
+#pragma region Salida
 		else if (sceneState == 5) {
 			sceneState = 0;
 			cout << "\nGoodBye!" << endl;
 			mustExit = true;
 		}
+#pragma endregion
 		else { sceneState == 0; }
 	}
 		}
